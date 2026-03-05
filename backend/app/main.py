@@ -17,6 +17,7 @@ from .connectors import BinanceConnector
 from .core import OrderBookManager
 from .models import OrderBookSnapshot, Trade
 from .utils import ConnectionManager
+from .analytics import AnalyticsEngine
 
 
 # Configure logging
@@ -29,6 +30,7 @@ logger = logging.getLogger(__name__)
 # Global instances
 order_book_manager = OrderBookManager()
 connection_manager = ConnectionManager()
+analytics_engine = AnalyticsEngine()
 exchange_connectors: Dict[str, BinanceConnector] = {}
 
 
@@ -41,6 +43,11 @@ async def on_book_snapshot(snapshot: OrderBookSnapshot) -> None:
     # Broadcast to clients
     await connection_manager.broadcast_orderbook(snapshot)
 
+    # Calculate analytics metrics
+    bids = [(level.price, level.quantity) for level in snapshot.bids]
+    asks = [(level.price, level.quantity) for level in snapshot.asks]
+    analytics = analytics_engine.process_order_book(bids, asks, snapshot.timestamp_us)
+
     # Calculate and broadcast stats
     stats = {
         "mid_price": str(book.get_mid_price()) if book.get_mid_price() else None,
@@ -49,14 +56,38 @@ async def on_book_snapshot(snapshot: OrderBookSnapshot) -> None:
         "imbalance": book.get_imbalance(levels=10),
         "bid_depth_10bps": str(book.get_depth_at_bps(10)[0]),
         "ask_depth_10bps": str(book.get_depth_at_bps(10)[1]),
+        # Add microstructure analytics
+        **analytics
     }
     await connection_manager.broadcast_stats(snapshot.symbol, stats)
 
 
 async def on_trade(trade: Trade) -> None:
     """Handle incoming trade."""
+    # Process trade through analytics
+    trade_metrics = analytics_engine.process_trade(
+        timestamp_ms=trade.timestamp_us // 1000,
+        price=trade.price,
+        quantity=trade.quantity,
+        side=trade.side if hasattr(trade, 'side') else None
+    )
+
+    # Add metrics to trade data
+    trade_with_metrics = {
+        "exchange": trade.exchange,
+        "symbol": trade.symbol,
+        "timestamp": trade.timestamp_us,
+        "price": str(trade.price),
+        "quantity": str(trade.quantity),
+        "metrics": trade_metrics
+    }
+
     # Broadcast to clients
     await connection_manager.broadcast_trade(trade)
+
+    # Broadcast analytics update
+    if trade_metrics:
+        await connection_manager.broadcast_analytics(trade.symbol, trade_metrics)
 
 
 async def start_exchange_connectors():
@@ -196,6 +227,18 @@ async def get_stats(symbol: str):
         "bid_depth_25bps": str(book.get_depth_at_bps(25)[0]),
         "ask_depth_25bps": str(book.get_depth_at_bps(25)[1]),
     }
+
+
+@app.get("/api/analytics/{symbol}")
+async def get_analytics(symbol: str):
+    """Get comprehensive microstructure analytics for a symbol."""
+    # Get all current metrics from the analytics engine
+    metrics = analytics_engine.get_all_metrics()
+
+    # Add symbol for context
+    metrics["symbol"] = symbol
+
+    return metrics
 
 
 @app.websocket("/ws")

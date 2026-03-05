@@ -11,6 +11,7 @@ interface UseWebSocketOptions {
   onOrderBook?: (data: OrderBookData) => void;
   onTrade?: (trade: Trade) => void;
   onStats?: (stats: MarketStats) => void;
+  onAnalytics?: (analytics: any) => void;
   reconnectDelay?: number;
 }
 
@@ -20,6 +21,7 @@ export function useWebSocket({
   onOrderBook,
   onTrade,
   onStats,
+  onAnalytics,
   reconnectDelay = 5000,
 }: UseWebSocketOptions) {
   const [isConnected, setIsConnected] = useState(false);
@@ -76,6 +78,10 @@ export function useWebSocket({
               onStats?.(message.data);
               break;
 
+            case 'analytics':
+              onAnalytics?.(message.data);
+              break;
+
             case 'subscribed':
               console.log('Subscribed to:', message.symbol);
               break;
@@ -118,7 +124,7 @@ export function useWebSocket({
       console.error('Failed to create WebSocket connection:', error);
       setIsConnected(false);
     }
-  }, [url, symbol, onOrderBook, onTrade, onStats, reconnectDelay]);
+  }, [url, symbol, onOrderBook, onTrade, onStats, onAnalytics, reconnectDelay]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

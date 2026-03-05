@@ -8,6 +8,7 @@ import React, { useState, useCallback } from 'react';
 import { useWebSocket } from '@/lib/useWebSocket';
 import { OrderBook } from '@/components/OrderBook';
 import { DepthChart } from '@/components/DepthChart';
+import { MetricsPanel } from '@/components/MetricsPanel';
 import { OrderBookData, Trade, MarketStats } from '@/types/market';
 
 export default function HomePage() {
@@ -15,6 +16,7 @@ export default function HomePage() {
   const [orderBookData, setOrderBookData] = useState<OrderBookData | null>(null);
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [marketStats, setMarketStats] = useState<MarketStats | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<any | null>(null);
 
   // WebSocket handlers
   const handleOrderBook = useCallback((data: OrderBookData) => {
@@ -29,12 +31,17 @@ export default function HomePage() {
     setMarketStats(stats);
   }, []);
 
+  const handleAnalytics = useCallback((analytics: any) => {
+    setAnalyticsData(analytics);
+  }, []);
+
   // Connect to WebSocket
   const { isConnected } = useWebSocket({
     symbol: selectedSymbol,
     onOrderBook: handleOrderBook,
     onTrade: handleTrade,
     onStats: handleStats,
+    onAnalytics: handleAnalytics,
   });
 
   // Format numbers
@@ -139,7 +146,7 @@ export default function HomePage() {
       )}
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Order Book */}
         <div className="lg:col-span-1">
           <OrderBook data={orderBookData} depth={20} />
@@ -184,7 +191,12 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Right Column - Additional Stats */}
+        {/* Microstructure Analytics */}
+        <div className="lg:col-span-1">
+          <MetricsPanel metrics={analyticsData} />
+        </div>
+
+        {/* Right Column - System Info */}
         <div className="lg:col-span-1 space-y-6">
           {/* Connection Info */}
           <div className="bg-card rounded-lg border border-border p-4">
@@ -222,19 +234,19 @@ export default function HomePage() {
               <div className="space-y-2">
                 <div className="flex items-start gap-2">
                   <span className="text-green-500">•</span>
-                  <span>Live order book with 100ms updates</span>
+                  <span>12+ Microstructure metrics</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-green-500">•</span>
-                  <span>Market depth visualization</span>
+                  <span>Kyle's Lambda & VPIN</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-green-500">•</span>
-                  <span>Real-time trade feed</span>
+                  <span>Hurst Exponent regime detection</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-green-500">•</span>
-                  <span>Microstructure analytics</span>
+                  <span>Real-time analytics stream</span>
                 </div>
               </div>
             </div>

@@ -163,3 +163,29 @@ class ConnectionManager:
 
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def broadcast_analytics(self, symbol: str, analytics: dict) -> None:
+        """Broadcast microstructure analytics to subscribed clients."""
+        # Get subscribed clients
+        client_ids = self.subscriptions.get(symbol, set()).copy()
+
+        if not client_ids:
+            return
+
+        # Prepare message
+        message = {
+            "type": "analytics",
+            "data": {
+                "symbol": symbol,
+                **analytics
+            }
+        }
+
+        # Send to all subscribed clients
+        tasks = []
+        for client_id in client_ids:
+            if client_id in self.active_connections:
+                tasks.append(self.send_personal_message(message, client_id))
+
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
