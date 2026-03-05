@@ -9,7 +9,7 @@ import { useWebSocket } from '@/lib/useWebSocket';
 import { OrderBook } from '@/components/OrderBook';
 import { DepthChart } from '@/components/DepthChart';
 import { MetricsPanel } from '@/components/MetricsPanel';
-import AlertFeed from '../../components/AlertFeed';
+import AlertFeed from '@/components/AlertFeed';
 import { OrderBookData, Trade, MarketStats } from '@/types/market';
 
 export default function HomePage() {
