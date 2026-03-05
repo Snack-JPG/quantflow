@@ -189,3 +189,26 @@ class ConnectionManager:
 
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def broadcast_alert(self, alert: dict) -> None:
+        """Broadcast alert to all connected clients."""
+        # Alerts go to all clients regardless of symbol subscription
+        client_ids = list(self.active_connections.keys())
+
+        if not client_ids:
+            return
+
+        # Prepare message
+        message = {
+            "type": "alert",
+            "data": alert
+        }
+
+        # Send to all clients
+        tasks = []
+        for client_id in client_ids:
+            if client_id in self.active_connections:
+                tasks.append(self.send_personal_message(message, client_id))
+
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)

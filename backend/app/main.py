@@ -18,6 +18,7 @@ from .core import OrderBookManager
 from .models import OrderBookSnapshot, Trade
 from .utils import ConnectionManager
 from .analytics import AnalyticsEngine
+from .detection import DetectionEngine, Alert
 
 
 # Configure logging
@@ -31,6 +32,7 @@ logger = logging.getLogger(__name__)
 order_book_manager = OrderBookManager()
 connection_manager = ConnectionManager()
 analytics_engine = AnalyticsEngine()
+detection_engines: Dict[str, DetectionEngine] = {}  # Per-symbol detection engines
 exchange_connectors: Dict[str, BinanceConnector] = {}
 
 
@@ -61,6 +63,25 @@ async def on_book_snapshot(snapshot: OrderBookSnapshot) -> None:
     }
     await connection_manager.broadcast_stats(snapshot.symbol, stats)
 
+    # Run pattern detection
+    detection_key = f"{snapshot.exchange}:{snapshot.symbol}"
+    if detection_key not in detection_engines:
+        detection_engines[detection_key] = DetectionEngine(snapshot.exchange, snapshot.symbol)
+
+    detection_engine = detection_engines[detection_key]
+
+    # Create empty lists for trades and order events for now
+    # In production, these would be populated from actual exchange data
+    alerts = await detection_engine.detect_patterns(
+        book_snapshot=snapshot,
+        trades=[],  # Will be populated when we have recent trades
+        order_events=None  # Would need L3 data for this
+    )
+
+    # Broadcast any alerts detected
+    for alert in alerts:
+        await connection_manager.broadcast_alert(alert.to_dict())
+
 
 async def on_trade(trade: Trade) -> None:
     """Handle incoming trade."""
@@ -88,6 +109,20 @@ async def on_trade(trade: Trade) -> None:
     # Broadcast analytics update
     if trade_metrics:
         await connection_manager.broadcast_analytics(trade.symbol, trade_metrics)
+
+    # Process trade through detection engine
+    detection_key = f"{trade.exchange}:{trade.symbol}"
+    if detection_key in detection_engines:
+        # Run detection with the new trade
+        alerts = await detection_engines[detection_key].detect_patterns(
+            book_snapshot=None,
+            trades=[trade],
+            order_events=None
+        )
+
+        # Broadcast any alerts
+        for alert in alerts:
+            await connection_manager.broadcast_alert(alert.to_dict())
 
 
 async def start_exchange_connectors():
@@ -239,6 +274,32 @@ async def get_analytics(symbol: str):
     metrics["symbol"] = symbol
 
     return metrics
+
+
+@app.get("/api/alerts")
+async def get_alerts(limit: int = 50):
+    """Get recent alerts across all symbols."""
+    all_alerts = []
+    for detection_engine in detection_engines.values():
+        # Get recent alerts from the engine's history
+        engine_alerts = detection_engine.recent_alerts[-limit:] if hasattr(detection_engine, 'recent_alerts') else []
+        all_alerts.extend([alert.to_dict() for alert in engine_alerts])
+
+    # Sort by timestamp and limit
+    all_alerts.sort(key=lambda x: x['timestamp'], reverse=True)
+    return {"alerts": all_alerts[:limit]}
+
+
+@app.get("/api/alerts/{exchange}/{symbol}")
+async def get_symbol_alerts(exchange: str, symbol: str, limit: int = 50):
+    """Get recent alerts for a specific symbol."""
+    detection_key = f"{exchange}:{symbol}"
+    if detection_key not in detection_engines:
+        return {"alerts": []}
+
+    engine = detection_engines[detection_key]
+    alerts = engine.recent_alerts[-limit:] if hasattr(engine, 'recent_alerts') else []
+    return {"alerts": [alert.to_dict() for alert in alerts]}
 
 
 @app.websocket("/ws")

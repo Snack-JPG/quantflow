@@ -9,6 +9,7 @@ import { useWebSocket } from '@/lib/useWebSocket';
 import { OrderBook } from '@/components/OrderBook';
 import { DepthChart } from '@/components/DepthChart';
 import { MetricsPanel } from '@/components/MetricsPanel';
+import AlertFeed from '../../components/AlertFeed';
 import { OrderBookData, Trade, MarketStats } from '@/types/market';
 
 export default function HomePage() {
@@ -196,8 +197,11 @@ export default function HomePage() {
           <MetricsPanel metrics={analyticsData} />
         </div>
 
-        {/* Right Column - System Info */}
+        {/* Right Column - Alert Feed & System Info */}
         <div className="lg:col-span-1 space-y-6">
+          {/* Alert Feed */}
+          <AlertFeed maxAlerts={30} />
+
           {/* Connection Info */}
           <div className="bg-card rounded-lg border border-border p-4">
             <h2 className="text-lg font-semibold mb-4">System Status</h2>
