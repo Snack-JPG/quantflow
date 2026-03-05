@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+}
+
+@layer components {
+  .order-book-row {
+    @apply grid grid-cols-3 px-2 py-0.5 font-mono text-xs;
+  }
+
+  .order-book-header {
+    @apply grid grid-cols-3 px-2 py-1 font-mono text-xs font-semibold border-b border-border;
+  }
+}
