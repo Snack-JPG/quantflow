@@ -5,6 +5,7 @@ import { MetricTimeseries } from '@/components/AnalysisLab/MetricTimeseries';
 import { FlowHeatmap } from '@/components/AnalysisLab/FlowHeatmap';
 import { ToxicityGauge } from '@/components/AnalysisLab/ToxicityGauge';
 import { RegimeTimeline } from '@/components/AnalysisLab/RegimeTimeline';
+import { VolumeProfile } from '@/components/AnalysisLab/VolumeProfile';
 import { motion } from 'framer-motion';
 import { BarChart3, Download, RefreshCw, Settings } from 'lucide-react';
 
@@ -37,6 +38,28 @@ const generateMockFlowData = (points: number = 500) => {
     buyVolume: Math.random() * 100,
     sellVolume: Math.random() * 100
   }));
+};
+
+const generateMockVolumeData = (levels: number = 50) => {
+  const basePrice = 45000;
+  const priceStep = 50;
+
+  return Array.from({ length: levels }, (_, i) => {
+    const price = basePrice + (i - levels / 2) * priceStep;
+    const distance = Math.abs(i - levels / 2);
+    const volumeMultiplier = Math.exp(-distance / 10);
+
+    const buyVolume = Math.random() * 1000 * volumeMultiplier;
+    const sellVolume = Math.random() * 1000 * volumeMultiplier;
+
+    return {
+      price,
+      buyVolume,
+      sellVolume,
+      totalVolume: buyVolume + sellVolume,
+      poc: i === Math.floor(levels / 2),
+    };
+  });
 };
 
 const generateMockRegimes = () => {
@@ -92,6 +115,7 @@ const generateMockRegimes = () => {
 export default function AnalysisLabPage() {
   const [metricData, setMetricData] = useState(() => generateMockMetricData());
   const [flowData, setFlowData] = useState(() => generateMockFlowData());
+  const [volumeData, setVolumeData] = useState(() => generateMockVolumeData());
   const [vpin, setVpin] = useState(0.45);
   const [historicalVpin, setHistoricalVpin] = useState(() =>
     Array.from({ length: 24 }, () => 0.3 + Math.random() * 0.4)
@@ -209,6 +233,14 @@ export default function AnalysisLabPage() {
             <h3 className="text-sm font-semibold text-white mb-3">Order Flow Heatmap</h3>
             <FlowHeatmap data={flowData} height={400} />
           </div>
+
+          {/* Volume Profile */}
+          <VolumeProfile
+            data={volumeData}
+            currentPrice={45000}
+            height={500}
+            showValueArea={true}
+          />
         </motion.div>
 
         {/* Right Column - Toxicity & Regime */}
@@ -276,48 +308,6 @@ export default function AnalysisLabPage() {
             </div>
           </div>
 
-          {/* Volume Profile */}
-          <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4">
-            <h3 className="text-sm font-semibold text-white mb-3">Volume Profile</h3>
-
-            <div className="space-y-2">
-              {[
-                { price: 45800, volume: 1250, poc: true },
-                { price: 45700, volume: 890, poc: false },
-                { price: 45600, volume: 2100, poc: false },
-                { price: 45500, volume: 3200, poc: false },
-                { price: 45400, volume: 1800, poc: false },
-                { price: 45300, volume: 950, poc: false },
-              ].map((level, index) => (
-                <div key={level.price} className="flex items-center gap-2">
-                  <span className={`text-xs font-mono w-16 ${
-                    level.poc ? 'text-yellow-400' : 'text-zinc-400'
-                  }`}>
-                    ${level.price}
-                  </span>
-                  <div className="flex-1 h-4 bg-zinc-950 rounded overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(level.volume / 3200) * 100}%` }}
-                      transition={{ delay: index * 0.05 }}
-                      className={`h-full ${
-                        level.poc ? 'bg-yellow-500' : 'bg-blue-500'
-                      }`}
-                      style={{ opacity: 0.7 }}
-                    />
-                  </div>
-                  <span className="text-xs text-zinc-600 w-12 text-right">
-                    {(level.volume / 1000).toFixed(1)}K
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-zinc-800 flex justify-between text-xs">
-              <span className="text-zinc-500">Point of Control</span>
-              <span className="text-yellow-400 font-mono">$45,800</span>
-            </div>
-          </div>
         </motion.div>
       </div>
     </div>
