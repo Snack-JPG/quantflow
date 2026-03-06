@@ -13,12 +13,17 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .connectors import BinanceConnector
+from .connectors import BinanceConnector, CoinbaseConnector, KrakenConnector
 from .core import OrderBookManager
 from .models import OrderBookSnapshot, Trade
 from .utils import ConnectionManager
 from .analytics import AnalyticsEngine
 from .detection import DetectionEngine, Alert
+from .arbitrage import (
+    PriceDiscrepancyMonitor,
+    TriangularArbitrageScanner,
+    LeadLagAnalyzer
+)
 
 
 # Configure logging
@@ -33,7 +38,12 @@ order_book_manager = OrderBookManager()
 connection_manager = ConnectionManager()
 analytics_engine = AnalyticsEngine()
 detection_engines: Dict[str, DetectionEngine] = {}  # Per-symbol detection engines
-exchange_connectors: Dict[str, BinanceConnector] = {}
+exchange_connectors: Dict[str, any] = {}  # Multiple exchange types
+
+# Arbitrage detection instances
+price_discrepancy_monitor = PriceDiscrepancyMonitor()
+triangular_scanner = TriangularArbitrageScanner()
+lead_lag_analyzer = LeadLagAnalyzer()
 
 
 async def on_book_snapshot(snapshot: OrderBookSnapshot) -> None:
@@ -44,6 +54,11 @@ async def on_book_snapshot(snapshot: OrderBookSnapshot) -> None:
 
     # Broadcast to clients
     await connection_manager.broadcast_orderbook(snapshot)
+
+    # Update arbitrage detectors
+    await price_discrepancy_monitor.update_order_book(snapshot)
+    await triangular_scanner.update_order_book(snapshot)
+    await lead_lag_analyzer.update_order_book(snapshot)
 
     # Calculate analytics metrics
     bids = [(level.price, level.quantity) for level in snapshot.bids]
@@ -93,6 +108,9 @@ async def on_trade(trade: Trade) -> None:
         side=trade.side if hasattr(trade, 'side') else None
     )
 
+    # Update lead-lag analyzer with trade data
+    await lead_lag_analyzer.update_trade(trade)
+
     # Add metrics to trade data
     trade_with_metrics = {
         "exchange": trade.exchange,
@@ -130,7 +148,7 @@ async def start_exchange_connectors():
     global exchange_connectors
 
     # Default symbols to track
-    symbols = ["BTCUSDT", "ETHUSDT"]
+    symbols = ["BTCUSDT", "ETHUSDT", "ETHBTC"]  # Added ETHBTC for triangular arbitrage
 
     # Start Binance connector
     binance = BinanceConnector(
@@ -140,9 +158,29 @@ async def start_exchange_connectors():
     )
     exchange_connectors["binance"] = binance
 
-    # Run connector in background
+    # Start Coinbase connector
+    coinbase = CoinbaseConnector(
+        symbols=symbols,
+        on_book_snapshot=on_book_snapshot,
+        on_trade=on_trade,
+    )
+    exchange_connectors["coinbase"] = coinbase
+
+    # Start Kraken connector
+    kraken = KrakenConnector(
+        symbols=symbols,
+        on_book_snapshot=on_book_snapshot,
+        on_trade=on_trade,
+    )
+    exchange_connectors["kraken"] = kraken
+
+    # Run connectors in background
     asyncio.create_task(binance.run())
-    logger.info(f"Started Binance connector for symbols: {symbols}")
+    asyncio.create_task(coinbase.run())
+    asyncio.create_task(kraken.run())
+
+    logger.info(f"Started exchange connectors for symbols: {symbols}")
+    logger.info("Active exchanges: Binance, Coinbase, Kraken")
 
 
 async def stop_exchange_connectors():
@@ -300,6 +338,122 @@ async def get_symbol_alerts(exchange: str, symbol: str, limit: int = 50):
     engine = detection_engines[detection_key]
     alerts = engine.recent_alerts[-limit:] if hasattr(engine, 'recent_alerts') else []
     return {"alerts": [alert.to_dict() for alert in alerts]}
+
+
+@app.get("/api/arbitrage/opportunities")
+async def get_arbitrage_opportunities(
+    symbol: Optional[str] = None,
+    min_profit_pct: Optional[float] = None
+):
+    """Get current arbitrage opportunities across exchanges."""
+    from decimal import Decimal
+
+    opportunities = price_discrepancy_monitor.get_opportunities(
+        symbol=symbol,
+        min_profit_pct=Decimal(str(min_profit_pct)) if min_profit_pct else None
+    )
+
+    return {
+        "opportunities": [
+            {
+                "timestamp": opp.timestamp.isoformat(),
+                "symbol": opp.symbol,
+                "buy_exchange": opp.buy_exchange,
+                "sell_exchange": opp.sell_exchange,
+                "buy_price": str(opp.buy_price),
+                "sell_price": str(opp.sell_price),
+                "spread_pct": str(opp.spread_pct),
+                "potential_volume": str(opp.potential_volume),
+                "estimated_profit": str(opp.estimated_profit),
+                "confidence": opp.confidence,
+                "latency_risk_ms": opp.latency_risk_ms
+            }
+            for opp in opportunities
+        ],
+        "statistics": price_discrepancy_monitor.get_statistics()
+    }
+
+
+@app.get("/api/arbitrage/triangular")
+async def get_triangular_arbitrage(
+    exchange: Optional[str] = None,
+    min_profit_pct: Optional[float] = None
+):
+    """Get triangular arbitrage opportunities."""
+    from decimal import Decimal
+
+    opportunities = triangular_scanner.get_opportunities(
+        exchange=exchange,
+        min_profit_pct=Decimal(str(min_profit_pct)) if min_profit_pct else None
+    )
+
+    return {
+        "opportunities": [
+            {
+                "timestamp": opp.timestamp.isoformat(),
+                "exchange": opp.exchange,
+                "path": [f"{step[0]} ({step[1]})" for step in opp.path],
+                "profit_pct": str(opp.profit_pct),
+                "confidence": opp.confidence,
+                "execution_time_ms": opp.execution_time_ms
+            }
+            for opp in opportunities
+        ],
+        "statistics": triangular_scanner.get_statistics()
+    }
+
+
+@app.get("/api/arbitrage/lead-lag")
+async def get_lead_lag_analysis(
+    symbol: Optional[str] = None,
+    min_correlation: Optional[float] = None
+):
+    """Get lead-lag analysis between exchanges."""
+    results = lead_lag_analyzer.get_lead_lag_results(
+        symbol=symbol,
+        min_correlation=min_correlation
+    )
+
+    return {
+        "results": [
+            {
+                "timestamp": result.timestamp.isoformat(),
+                "symbol": result.symbol,
+                "lead_exchange": result.lead_exchange,
+                "lag_exchange": result.lag_exchange,
+                "lag_ms": result.lag_ms,
+                "correlation": result.correlation,
+                "granger_pvalue": result.granger_causality_pvalue,
+                "predictive_power": result.predictive_power
+            }
+            for result in results
+        ],
+        "statistics": lead_lag_analyzer.get_statistics()
+    }
+
+
+@app.get("/api/arbitrage/correlations/{symbol}")
+async def get_exchange_correlations(symbol: str, min_correlation: Optional[float] = 0.5):
+    """Get correlation analysis between exchanges for a symbol."""
+    correlations = lead_lag_analyzer.get_correlations(
+        symbol=symbol,
+        min_correlation=min_correlation
+    )
+
+    return {
+        "symbol": symbol,
+        "correlations": [
+            {
+                "exchange1": corr.exchange1,
+                "exchange2": corr.exchange2,
+                "correlation": corr.correlation,
+                "optimal_lag_ms": corr.optimal_lag_ms,
+                "max_correlation": corr.max_correlation,
+                "volatility_ratio": corr.volatility_ratio
+            }
+            for corr in correlations
+        ]
+    }
 
 
 @app.websocket("/ws")
