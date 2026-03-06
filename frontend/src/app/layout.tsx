@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { Navigation } from '@/components/Navigation'
 
 export const metadata: Metadata = {
   title: 'QuantFlow - Order Book Intelligence',
@@ -13,7 +14,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen bg-background">{children}</body>
+      <body className="min-h-screen bg-zinc-950">
+        <Navigation />
+        <main className="max-w-[1920px] mx-auto">
+          {children}
+        </main>
+      </body>
     </html>
   )
 }
