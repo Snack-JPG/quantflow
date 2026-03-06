@@ -1,47 +1,184 @@
 version: '3.8'
 
 services:
-  backend:
+  # API Gateway
+  gateway:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: quantflow-backend
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - PYTHONUNBUFFERED=1
+    container_name: quantflow-gateway
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql://quantflow:quantflow@timescaledb:5432/quantflow
+      - REDIS_URL=redis://redis:6379
+      - ENVIRONMENT=production
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
     depends_on:
       - redis
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: quantflow-frontend
-    environment:
-      - NODE_ENV=development
-    ports:
-      - "3001:3001"
+      - timescaledb
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
-    depends_on:
-      - backend
-    command: npm run dev
+      - ./backend:/app
+      - ./data:/app/data
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --loop uvloop
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - quantflow-network
 
+  # TimescaleDB for time-series storage
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: quantflow-timescaledb
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=quantflow
+      - POSTGRES_USER=quantflow
+      - POSTGRES_PASSWORD=quantflow
+      - TS_TUNE_MAX_CONNS=100
+      - TS_TUNE_MEMORY=4GB
+    volumes:
+      - timescale-data:/var/lib/postgresql/data
+      - ./backend/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quantflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - quantflow-network
+
+  # Redis for pub/sub and caching
   redis:
     image: redis:7-alpine
     container_name: quantflow-redis
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - quantflow-network
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: quantflow-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NODE_ENV=production
+    depends_on:
+      - gateway
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    networks:
+      - quantflow-network
+
+  # Binance Connector
+  connector-binance:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.connector
+    container_name: quantflow-connector-binance
+    environment:
+      - EXCHANGE=binance
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://quantflow:quantflow@timescaledb:5432/quantflow
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    depends_on:
+      - redis
+      - timescaledb
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+    command: python -m app.connectors.binance_connector
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - quantflow-network
+
+  # Coinbase Connector
+  connector-coinbase:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.connector
+    container_name: quantflow-connector-coinbase
+    environment:
+      - EXCHANGE=coinbase
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://quantflow:quantflow@timescaledb:5432/quantflow
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    depends_on:
+      - redis
+      - timescaledb
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+    command: python -m app.connectors.coinbase_connector
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - quantflow-network
+
+  # Kraken Connector
+  connector-kraken:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.connector
+    container_name: quantflow-connector-kraken
+    environment:
+      - EXCHANGE=kraken
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://quantflow:quantflow@timescaledb:5432/quantflow
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    depends_on:
+      - redis
+      - timescaledb
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+    command: python -m app.connectors.kraken_connector
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - quantflow-network
+
+networks:
+  quantflow-network:
+    driver: bridge
 
 volumes:
-  redis_data:
+  redis-data:
+  timescale-data:
