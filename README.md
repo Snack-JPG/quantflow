@@ -237,6 +237,3 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 - FastAPI for the modern Python web framework
 - The quantitative finance research community
 
----
-
-**Built with discipline and attention to detail** — The kind of system that makes quant hiring managers say "finally, someone who gets it."
