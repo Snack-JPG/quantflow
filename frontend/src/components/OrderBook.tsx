@@ -34,10 +34,10 @@ export function OrderBook({ data, depth = 20 }: OrderBookProps) {
     if (!data) return { maxBidQty: 0, maxAskQty: 0 };
 
     const maxBid = Math.max(
-      ...data.bids.slice(0, depth).map(([_, qty]) => parseFloat(qty))
+      ...data.bids.slice(0, depth).map(([, qty]) => parseFloat(qty))
     );
     const maxAsk = Math.max(
-      ...data.asks.slice(0, depth).map(([_, qty]) => parseFloat(qty))
+      ...data.asks.slice(0, depth).map(([, qty]) => parseFloat(qty))
     );
 
     return { maxBidQty: maxBid || 1, maxAskQty: maxAsk || 1 };

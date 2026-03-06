@@ -12,15 +12,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
 
     - name: Cache pip dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -38,35 +38,32 @@ jobs:
       run: |
         cd backend
         black --check .
-      continue-on-error: true
 
     - name: Type check with mypy
       run: |
         cd backend
         mypy app/ --ignore-missing-imports
-      continue-on-error: true
 
     - name: Run tests
       run: |
         cd backend
-        pytest tests/ -v --cov=app --cov-report=term-missing
+        pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
 
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./backend/coverage.xml
         flags: backend
-      continue-on-error: true
 
   # Frontend Next.js Tests
   frontend-test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'npm'
@@ -81,34 +78,26 @@ jobs:
       run: |
         cd frontend
         npm run lint
-      continue-on-error: true
 
     - name: Type check
       run: |
         cd frontend
         npm run type-check
-      continue-on-error: true
 
     - name: Build
       run: |
         cd frontend
         npm run build
 
-    - name: Test
-      run: |
-        cd frontend
-        npm test -- --passWithNoTests
-      continue-on-error: true
-
   # Docker Build Test
   docker-build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
 
     - name: Build Backend Docker Image
       run: |
@@ -124,7 +113,7 @@ jobs:
 
     - name: Docker Compose Validation
       run: |
-        docker-compose config
+        docker compose config
 
   # Performance Benchmarks (on main branch only)
   benchmark:
@@ -133,10 +122,10 @@ jobs:
     needs: [backend-test]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
 
@@ -149,8 +138,7 @@ jobs:
     - name: Run benchmarks
       run: |
         cd backend
-        pytest tests/benchmarks/ --benchmark-only --benchmark-json=benchmark.json
-      continue-on-error: true
+        pytest -o addopts='' tests/benchmarks/ -m benchmark --benchmark-only --benchmark-json=benchmark.json
 
     - name: Store benchmark result
       uses: benchmark-action/github-action-benchmark@v1
@@ -159,4 +147,3 @@ jobs:
         output-file-path: backend/benchmark.json
         github-token: ${{ secrets.GITHUB_TOKEN }}
         auto-push: false
-      continue-on-error: true

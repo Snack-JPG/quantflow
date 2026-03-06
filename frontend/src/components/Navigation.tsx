@@ -8,8 +8,7 @@ import {
   BarChart3,
   Beaker,
   Terminal,
-  Settings,
-  AlertCircle
+  Settings
 } from 'lucide-react';
 
 const navItems = [

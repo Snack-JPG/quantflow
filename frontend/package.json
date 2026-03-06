@@ -6,7 +6,9 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "next lint"
+    "lint": "next lint --max-warnings=0",
+    "type-check": "tsc --noEmit",
+    "test": "echo \"No frontend tests configured\""
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.0.2",
@@ -29,6 +31,7 @@
     "typescript": "^5.3.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",

@@ -4,12 +4,34 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, Search, Send, Download, Copy, Sparkles, Database, TrendingUp, AlertCircle } from 'lucide-react';
 
+interface QueryEvent {
+  time: string;
+  exchange: string;
+  type: string;
+  size: string;
+  confidence: number;
+}
+
+interface QueryResultPayload {
+  analysis?: string;
+  metrics?: Record<string, string | number>;
+  events?: QueryEvent[];
+  summary?: string;
+  statistics?: Record<string, string | number>;
+  interpretation?: string;
+  message?: string;
+  dataPoints?: number;
+  timeRange?: string;
+  confidence?: number;
+  [key: string]: unknown;
+}
+
 interface QueryResult {
   id: string;
   query: string;
   timestamp: number;
   type: 'data' | 'analysis' | 'commentary' | 'error';
-  result: any;
+  result: QueryResultPayload;
 }
 
 const sampleQueries = [
@@ -273,7 +295,9 @@ The event appears to be a liquidation cascade rather than coordinated manipulati
                         </div>
                         {result.result.metrics && (
                           <div className="grid grid-cols-4 gap-3 mt-4">
-                            {Object.entries(result.result.metrics).map(([key, value]) => (
+                            {Object.entries(
+                              result.result.metrics as Record<string, string | number>
+                            ).map(([key, value]) => (
                               <div key={key} className="bg-zinc-950 rounded-lg p-2">
                                 <div className="text-[10px] text-zinc-500 capitalize">
                                   {key.replace(/([A-Z])/g, ' $1').trim()}
@@ -301,7 +325,7 @@ The event appears to be a liquidation cascade rather than coordinated manipulati
                             </tr>
                           </thead>
                           <tbody>
-                            {result.result.events.map((event: any, i: number) => (
+                            {result.result.events.map((event, i) => (
                               <tr key={i} className="border-b border-zinc-800/50">
                                 <td className="p-2 text-zinc-400">{event.time}</td>
                                 <td className="p-2 text-zinc-400">{event.exchange}</td>
@@ -333,7 +357,9 @@ The event appears to be a liquidation cascade rather than coordinated manipulati
                     {result.type === 'analysis' && result.result.statistics && (
                       <div className="space-y-3">
                         <div className="grid grid-cols-3 gap-3">
-                          {Object.entries(result.result.statistics).map(([key, value]) => (
+                          {Object.entries(
+                            result.result.statistics as Record<string, string | number>
+                          ).map(([key, value]) => (
                             <div key={key} className="bg-zinc-950 rounded-lg p-3">
                               <div className="text-xs text-zinc-500 capitalize mb-1">
                                 {key.replace(/([A-Z])/g, ' $1').trim()}

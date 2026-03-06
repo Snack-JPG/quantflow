@@ -6,23 +6,35 @@
 
 import React, { useEffect, useRef, useMemo } from 'react';
 import { OrderBookData } from '@/types/market';
+import type { AreaData, IChartApi, ISeriesApi, UTCTimestamp } from 'lightweight-charts';
 
 interface DepthChartProps {
   data: OrderBookData | null;
   height?: number;
 }
 
+interface DepthLevel {
+  price: number;
+  quantity: number;
+  cumulative: number;
+}
+
+interface DepthSeriesRefs {
+  bidSeries: ISeriesApi<'Area'>;
+  askSeries: ISeriesApi<'Area'>;
+}
+
 export function DepthChart({ data, height = 400 }: DepthChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<any>(null);
-  const seriesRef = useRef<any>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<DepthSeriesRefs | null>(null);
 
   // Calculate cumulative depth data
   const depthData = useMemo(() => {
     if (!data || !data.bids.length || !data.asks.length) return null;
 
     // Process bids (cumulative from best to worst)
-    const bidDepth: Array<{ price: number; quantity: number; cumulative: number }> = [];
+    const bidDepth: DepthLevel[] = [];
     let bidCumulative = 0;
 
     for (let i = 0; i < Math.min(data.bids.length, 50); i++) {
@@ -36,7 +48,7 @@ export function DepthChart({ data, height = 400 }: DepthChartProps) {
     }
 
     // Process asks (cumulative from best to worst)
-    const askDepth: Array<{ price: number; quantity: number; cumulative: number }> = [];
+    const askDepth: DepthLevel[] = [];
     let askCumulative = 0;
 
     for (let i = 0; i < Math.min(data.asks.length, 50); i++) {
@@ -54,16 +66,18 @@ export function DepthChart({ data, height = 400 }: DepthChartProps) {
 
   // Initialize chart
   useEffect(() => {
+    let mounted = true;
+    let handleResize: (() => void) | null = null;
+
     const initChart = async () => {
       if (!containerRef.current) return;
 
-      // Dynamically import lightweight-charts
       const { createChart } = await import('lightweight-charts');
+      if (!mounted || !containerRef.current) return;
 
-      // Create chart
       const chart = createChart(containerRef.current, {
         width: containerRef.current.clientWidth,
-        height: height,
+        height,
         layout: {
           background: { color: '#0a0a0a' },
           textColor: '#9ca3af',
@@ -81,7 +95,6 @@ export function DepthChart({ data, height = 400 }: DepthChartProps) {
         },
       });
 
-      // Create area series for bids
       const bidSeries = chart.addAreaSeries({
         lineColor: '#22c55e',
         topColor: '#22c55e',
@@ -90,7 +103,6 @@ export function DepthChart({ data, height = 400 }: DepthChartProps) {
         priceScaleId: 'right',
       });
 
-      // Create area series for asks
       const askSeries = chart.addAreaSeries({
         lineColor: '#ef4444',
         topColor: '#ef4444',
@@ -102,24 +114,30 @@ export function DepthChart({ data, height = 400 }: DepthChartProps) {
       chartRef.current = chart;
       seriesRef.current = { bidSeries, askSeries };
 
-      // Handle resize
-      const handleResize = () => {
-        if (containerRef.current && chart) {
-          chart.applyOptions({
+      handleResize = () => {
+        if (containerRef.current && chartRef.current) {
+          chartRef.current.applyOptions({
             width: containerRef.current.clientWidth,
           });
         }
       };
 
       window.addEventListener('resize', handleResize);
-
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        chart.remove();
-      };
     };
 
-    initChart();
+    void initChart();
+
+    return () => {
+      mounted = false;
+      if (handleResize) {
+        window.removeEventListener('resize', handleResize);
+      }
+      if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null;
+      }
+      seriesRef.current = null;
+    };
   }, [height]);
 
   // Update chart data
@@ -130,14 +148,14 @@ export function DepthChart({ data, height = 400 }: DepthChartProps) {
     const { bidDepth, askDepth } = depthData;
 
     // Format bid data for chart
-    const bidData = bidDepth.map((level) => ({
-      time: level.price as any, // Using price as x-axis
+    const bidData: AreaData<UTCTimestamp>[] = bidDepth.map((level, index) => ({
+      time: (Math.floor(level.price * 10) + index) as UTCTimestamp,
       value: level.cumulative,
     }));
 
     // Format ask data for chart
-    const askData = askDepth.map((level) => ({
-      time: level.price as any, // Using price as x-axis
+    const askData: AreaData<UTCTimestamp>[] = askDepth.map((level, index) => ({
+      time: (Math.floor(level.price * 10) + index + 1_000_000) as UTCTimestamp,
       value: level.cumulative,
     }));
 

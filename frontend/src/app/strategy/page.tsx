@@ -8,7 +8,7 @@ import { EquityCurve } from '@/components/StrategyBuilder/EquityCurve';
 import { TradeScatter } from '@/components/StrategyBuilder/TradeScatter';
 import { PerformanceMetrics } from '@/components/StrategyBuilder/PerformanceMetrics';
 import { StrategyComparison } from '@/components/StrategyBuilder/StrategyComparison';
-import { Beaker, Play, Save, Upload, ChevronRight, AlertCircle } from 'lucide-react';
+import { Beaker, Play, Save, Upload, ChevronRight } from 'lucide-react';
 
 interface Strategy {
   id: string;
@@ -75,7 +75,7 @@ export default function StrategyBuilderPage() {
 
   const [backtestResults, setBacktestResults] = useState<BacktestResult | null>(null);
   const [isBacktesting, setIsBacktesting] = useState(false);
-  const [compareStrategies, setCompareStrategies] = useState<BacktestResult[]>([]);
+  const [compareStrategies] = useState<BacktestResult[]>([]);
 
   const runBacktest = async () => {
     setIsBacktesting(true);

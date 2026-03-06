@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # API Gateway
   gateway:
@@ -23,7 +21,7 @@ services:
       - ./data:/app/data
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --loop uvloop
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -88,90 +86,6 @@ services:
       - /app/node_modules
       - /app/.next
     command: npm run dev
-    networks:
-      - quantflow-network
-
-  # Binance Connector
-  connector-binance:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.connector
-    container_name: quantflow-connector-binance
-    environment:
-      - EXCHANGE=binance
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://quantflow:quantflow@timescaledb:5432/quantflow
-      - PYTHONUNBUFFERED=1
-      - LOG_LEVEL=INFO
-    depends_on:
-      - redis
-      - timescaledb
-    volumes:
-      - ./backend:/app
-      - ./data:/app/data
-    command: python -m app.connectors.binance_connector
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-    networks:
-      - quantflow-network
-
-  # Coinbase Connector
-  connector-coinbase:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.connector
-    container_name: quantflow-connector-coinbase
-    environment:
-      - EXCHANGE=coinbase
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://quantflow:quantflow@timescaledb:5432/quantflow
-      - PYTHONUNBUFFERED=1
-      - LOG_LEVEL=INFO
-    depends_on:
-      - redis
-      - timescaledb
-    volumes:
-      - ./backend:/app
-      - ./data:/app/data
-    command: python -m app.connectors.coinbase_connector
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-    networks:
-      - quantflow-network
-
-  # Kraken Connector
-  connector-kraken:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.connector
-    container_name: quantflow-connector-kraken
-    environment:
-      - EXCHANGE=kraken
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://quantflow:quantflow@timescaledb:5432/quantflow
-      - PYTHONUNBUFFERED=1
-      - LOG_LEVEL=INFO
-    depends_on:
-      - redis
-      - timescaledb
-    volumes:
-      - ./backend:/app
-      - ./data:/app/data
-    command: python -m app.connectors.kraken_connector
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
     networks:
       - quantflow-network
 

@@ -33,7 +33,11 @@ from .strategies import (
 )
 
 # Data loading
-from .data_loader import BinanceDataLoader
+try:
+    from .data_loader import BinanceDataLoader
+except ModuleNotFoundError:
+    # Keep package importable even when optional loader dependencies are absent.
+    BinanceDataLoader = None  # type: ignore[assignment]
 
 __all__ = [
     # Base

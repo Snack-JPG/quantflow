@@ -18,5 +18,5 @@ COPY . .
 # Create data directory
 RUN mkdir -p /app/data
 
-# Default command (will be overridden per connector in docker-compose)
-CMD ["python", "-m", "app.connectors.binance_connector"]
+# Default command kept valid for image smoke tests
+CMD ["python", "-m", "app.main"]

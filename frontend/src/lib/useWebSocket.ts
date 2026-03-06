@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { WebSocketMessage, OrderBookData, Trade, MarketStats } from '@/types/market';
+import { WebSocketMessage, OrderBookData, Trade, MarketStats, AnalyticsData } from '@/types/market';
 
 interface UseWebSocketOptions {
   url?: string;
@@ -11,7 +11,7 @@ interface UseWebSocketOptions {
   onOrderBook?: (data: OrderBookData) => void;
   onTrade?: (trade: Trade) => void;
   onStats?: (stats: MarketStats) => void;
-  onAnalytics?: (analytics: any) => void;
+  onAnalytics?: (analytics: AnalyticsData) => void;
   reconnectDelay?: number;
 }
 

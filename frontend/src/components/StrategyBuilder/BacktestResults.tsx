@@ -38,6 +38,8 @@ export function BacktestResults({ result }: BacktestResultsProps) {
   const [showAllTrades, setShowAllTrades] = useState(false);
   const [sortBy, setSortBy] = useState<'time' | 'pnl' | 'duration'>('time');
   const [filterSide, setFilterSide] = useState<'all' | 'long' | 'short'>('all');
+  const sortOptions = ['time', 'pnl', 'duration'] as const;
+  const sideOptions = ['all', 'long', 'short'] as const;
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
@@ -89,7 +91,12 @@ export function BacktestResults({ result }: BacktestResultsProps) {
           <div className="flex items-center gap-2">
             <select
               value={filterSide}
-              onChange={(e) => setFilterSide(e.target.value as any)}
+              onChange={(e) => {
+                const nextValue = e.target.value as (typeof sideOptions)[number];
+                if (sideOptions.includes(nextValue)) {
+                  setFilterSide(nextValue);
+                }
+              }}
               className="bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-white"
             >
               <option value="all">All Trades</option>
@@ -98,7 +105,12 @@ export function BacktestResults({ result }: BacktestResultsProps) {
             </select>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e) => {
+                const nextValue = e.target.value as (typeof sortOptions)[number];
+                if (sortOptions.includes(nextValue)) {
+                  setSortBy(nextValue);
+                }
+              }}
               className="bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-white"
             >
               <option value="time">Sort by Time</option>

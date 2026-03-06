@@ -10,14 +10,14 @@ import { OrderBook } from '@/components/OrderBook';
 import { DepthChart } from '@/components/DepthChart';
 import { MetricsPanel } from '@/components/MetricsPanel';
 import AlertFeed from '@/components/AlertFeed';
-import { OrderBookData, Trade, MarketStats } from '@/types/market';
+import { AnalyticsData, OrderBookData, Trade, MarketStats } from '@/types/market';
 
 export default function HomePage() {
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
   const [orderBookData, setOrderBookData] = useState<OrderBookData | null>(null);
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [marketStats, setMarketStats] = useState<MarketStats | null>(null);
-  const [analyticsData, setAnalyticsData] = useState<any | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
 
   // WebSocket handlers
   const handleOrderBook = useCallback((data: OrderBookData) => {
@@ -32,7 +32,7 @@ export default function HomePage() {
     setMarketStats(stats);
   }, []);
 
-  const handleAnalytics = useCallback((analytics: any) => {
+  const handleAnalytics = useCallback((analytics: AnalyticsData) => {
     setAnalyticsData(analytics);
   }, []);
 
@@ -242,7 +242,7 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-green-500">•</span>
-                  <span>Kyle's Lambda & VPIN</span>
+                  <span>Kyle&apos;s Lambda & VPIN</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-green-500">•</span>

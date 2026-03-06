@@ -8,6 +8,7 @@ import time
 import numpy as np
 import asyncio
 from datetime import datetime
+from decimal import Decimal
 import psutil
 import json
 from concurrent.futures import ThreadPoolExecutor
@@ -317,6 +318,7 @@ class TestPerformanceBenchmarks:
         print(f"Average API response time: {avg_response_time:.2f}ms")
         assert avg_response_time < 50  # Less than 50ms per request
 
+    @pytest.mark.benchmark
     def test_system_resource_usage(self):
         """Test overall system resource usage"""
         process = psutil.Process()
@@ -326,21 +328,20 @@ class TestPerformanceBenchmarks:
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
         # Run intensive operations
-        from app.models.order_book import OrderBook
-        from app.services.microstructure import MicrostructureAnalyzer
+        from app.analytics.engine import AnalyticsEngine
 
-        books = []
-        for i in range(5):
-            book = OrderBook(f'PAIR{i}', 'exchange')
-            for j in range(500):
-                book.update_bid(100 - j*0.01, np.random.uniform(1, 100))
-                book.update_ask(100 + j*0.01, np.random.uniform(1, 100))
-            books.append(book)
-
-        # Calculate metrics
-        analyzer = MicrostructureAnalyzer()
-        for book in books:
-            analyzer.calculate_spread_metrics(book)
+        engine = AnalyticsEngine()
+        for _ in range(2_500):
+            base = Decimal("50000")
+            bids = [
+                (base - Decimal("1"), Decimal(str(np.random.uniform(1, 5)))),
+                (base - Decimal("2"), Decimal(str(np.random.uniform(1, 5)))),
+            ]
+            asks = [
+                (base + Decimal("1"), Decimal(str(np.random.uniform(1, 5)))),
+                (base + Decimal("2"), Decimal(str(np.random.uniform(1, 5)))),
+            ]
+            engine.process_order_book(bids=bids, asks=asks, timestamp_ms=1_700_000_000_000)
 
         # Get final metrics
         final_cpu = process.cpu_percent()

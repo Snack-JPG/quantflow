@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { createChart, IChartApi, ISeriesApi, ColorType } from 'lightweight-charts';
+import { createChart, IChartApi, ISeriesApi, ColorType, Time } from 'lightweight-charts';
 import { motion } from 'framer-motion';
 
 interface DepthChartProps {
@@ -102,7 +102,7 @@ export function DepthChart({ bids, asks, height = 400 }: DepthChartProps) {
     const bidData = [...bids]
       .sort((a, b) => b.price - a.price)
       .map(level => ({
-        time: level.price,
+        time: level.price as Time,
         value: level.total,
       }));
 
@@ -110,7 +110,7 @@ export function DepthChart({ bids, asks, height = 400 }: DepthChartProps) {
     const askData = [...asks]
       .sort((a, b) => a.price - b.price)
       .map(level => ({
-        time: level.price,
+        time: level.price as Time,
         value: level.total,
       }));
 

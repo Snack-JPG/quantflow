@@ -37,8 +37,10 @@ export function ToxicityGauge({ vpin, historicalVpin = [], width = 300, height =
     const g = svg.append('g')
       .attr('transform', `translate(${margin.left + innerWidth / 2},${margin.top + innerHeight})`);
 
+    type ArcDatum = { endAngle: number };
+
     // Create arc generator
-    const arc = d3.arc()
+    const arc = d3.arc<ArcDatum>()
       .innerRadius(innerHeight * 0.6)
       .outerRadius(innerHeight * 0.8)
       .startAngle(-Math.PI / 2)
@@ -47,7 +49,7 @@ export function ToxicityGauge({ vpin, historicalVpin = [], width = 300, height =
     // Background arc
     g.append('path')
       .datum({ endAngle: Math.PI / 2 })
-      .attr('d', arc as any)
+      .attr('d', d => arc(d) ?? '')
       .attr('fill', '#27272a');
 
     // Create gradient
@@ -77,17 +79,17 @@ export function ToxicityGauge({ vpin, historicalVpin = [], width = 300, height =
     // Value arc with animation
     const valueArc = g.append('path')
       .datum({ endAngle: -Math.PI / 2 })
-      .attr('d', arc as any)
+      .attr('d', d => arc(d) ?? '')
       .attr('fill', toxicityInfo.color);
 
     valueArc.transition()
       .duration(1000)
       .ease(d3.easeElasticOut)
-      .attrTween('d', function(d: any) {
+      .attrTween('d', function(d: ArcDatum) {
         const interpolate = d3.interpolate(d.endAngle, -Math.PI / 2 + Math.PI * vpin);
         return function(t: number) {
           d.endAngle = interpolate(t);
-          return (arc as any)(d);
+          return arc(d) ?? '';
         };
       });
 

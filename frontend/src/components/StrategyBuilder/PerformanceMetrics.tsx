@@ -112,7 +112,7 @@ export function PerformanceMetrics({ metrics }: PerformanceMetricsProps) {
       >
         <h3 className="text-sm font-semibold text-white mb-3">Detailed Performance Metrics</h3>
         <div className="grid grid-cols-3 gap-3">
-          {detailedMetrics.map((metric, index) => (
+          {detailedMetrics.map((metric) => (
             <div
               key={metric.label}
               className="bg-zinc-950 rounded-lg p-3"

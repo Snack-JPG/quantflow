@@ -148,10 +148,6 @@ export function OrderBookHeatmap({ bids, asks, trades = [], height = 600 }: Orde
       .ticks(5)
       .tickFormat(d3.format('.2s'));
 
-    const xAxisAsk = d3.axisTop(xScale)
-      .ticks(5)
-      .tickFormat(d3.format('.2s'));
-
     const yAxis = d3.axisLeft(yScale)
       .ticks(10)
       .tickFormat(d3.format(',.0f'));

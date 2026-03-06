@@ -4,13 +4,10 @@ import React, { useState } from 'react';
 import {
   LineChart,
   Line,
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   ReferenceLine,
   Brush
@@ -85,6 +82,18 @@ const metricConfig = {
   }
 };
 
+interface TooltipEntry {
+  color: string;
+  dataKey: string;
+  value: number;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipEntry[];
+  label?: number;
+}
+
 export function MetricTimeseries({ data, selectedMetrics = ['spread', 'vpin'] }: MetricTimeseriesProps) {
   const [activeMetrics, setActiveMetrics] = useState<string[]>(selectedMetrics);
   const [timeRange, setTimeRange] = useState<'1H' | '4H' | '12H' | '24H'>('4H');
@@ -119,13 +128,13 @@ export function MetricTimeseries({ data, selectedMetrics = ['spread', 'vpin'] }:
     });
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (!active || !payload) return null;
 
     return (
       <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3">
-        <p className="text-xs text-zinc-400 mb-2">{formatTime(label)}</p>
-        {payload.map((entry: any, index: number) => {
+        <p className="text-xs text-zinc-400 mb-2">{formatTime(label ?? Date.now())}</p>
+        {payload.map((entry, index) => {
           const config = metricConfig[entry.dataKey as keyof typeof metricConfig];
           return (
             <div key={index} className="flex items-center gap-2 text-xs">

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { motion } from 'framer-motion';
-import { Scatter } from 'lucide-react';
+import { ScatterChart } from 'lucide-react';
 
 interface Trade {
   entryTime: number;
@@ -52,7 +52,7 @@ export function TradeScatter({ trades, height = 400 }: TradeScatterProps) {
       .domain(d3.extent(trades, d => d.pnl) as [number, number])
       .range([innerHeight, 0]);
 
-    const colorScale = d3.scaleOrdinal()
+    const colorScale = d3.scaleOrdinal<'long' | 'short', string>()
       .domain(['long', 'short'])
       .range(['#10b981', '#ef4444']);
 
@@ -91,7 +91,7 @@ export function TradeScatter({ trades, height = 400 }: TradeScatterProps) {
       .attr('opacity', 0.5);
 
     // Add scatter points
-    const circles = g.selectAll('.trade')
+    g.selectAll('.trade')
       .data(tradesWithDuration)
       .enter()
       .append('circle')
@@ -195,7 +195,7 @@ export function TradeScatter({ trades, height = 400 }: TradeScatterProps) {
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Scatter className="w-4 h-4 text-blue-500" />
+          <ScatterChart className="w-4 h-4 text-blue-500" />
           <h3 className="text-sm font-semibold text-white">Trade Scatter Plot</h3>
         </div>
         <div className="flex items-center gap-4 text-xs">

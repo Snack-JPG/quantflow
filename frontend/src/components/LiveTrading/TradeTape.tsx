@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUp, ArrowDown, Activity } from 'lucide-react';
 
@@ -17,45 +17,9 @@ interface Trade {
 
 interface TradeTapeProps {
   trades: Trade[];
-  showAggregation?: boolean;
 }
 
-export function TradeTape({ trades, showAggregation = true }: TradeTapeProps) {
-  const [aggregatedTrades, setAggregatedTrades] = useState<Map<number, Trade[]>>(new Map());
-  const [priceDirection, setPriceDirection] = useState<Map<number, 'up' | 'down' | 'neutral'>>(new Map());
-
-  useEffect(() => {
-    if (!showAggregation) return;
-
-    // Aggregate trades by price level
-    const aggregation = new Map<number, Trade[]>();
-    const direction = new Map<number, 'up' | 'down' | 'neutral'>();
-
-    trades.forEach((trade, index) => {
-      const priceKey = Math.round(trade.price * 100) / 100;
-
-      if (!aggregation.has(priceKey)) {
-        aggregation.set(priceKey, []);
-      }
-      aggregation.get(priceKey)!.push(trade);
-
-      // Determine price direction
-      if (index > 0) {
-        const prevTrade = trades[index - 1];
-        if (trade.price > prevTrade.price) {
-          direction.set(priceKey, 'up');
-        } else if (trade.price < prevTrade.price) {
-          direction.set(priceKey, 'down');
-        } else {
-          direction.set(priceKey, 'neutral');
-        }
-      }
-    });
-
-    setAggregatedTrades(aggregation);
-    setPriceDirection(direction);
-  }, [trades, showAggregation]);
-
+export function TradeTape({ trades }: TradeTapeProps) {
   const formatPrice = (price: number) => {
     if (price >= 1000) return price.toFixed(2);
     if (price >= 1) return price.toFixed(4);

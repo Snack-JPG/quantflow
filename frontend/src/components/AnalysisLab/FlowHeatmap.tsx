@@ -17,6 +17,14 @@ interface FlowHeatmapProps {
   height?: number;
 }
 
+interface HeatmapCell {
+  priceIndex: number;
+  timeIndex: number;
+  value: number;
+  price: number;
+  time: number;
+}
+
 export function FlowHeatmap({ data, width: propWidth, height = 400 }: FlowHeatmapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -76,7 +84,7 @@ export function FlowHeatmap({ data, width: propWidth, height = 400 }: FlowHeatma
     });
 
     // Flatten for D3
-    const flatData: any[] = [];
+    const flatData: HeatmapCell[] = [];
     matrix.forEach((row, i) => {
       row.forEach((value, j) => {
         flatData.push({
@@ -103,7 +111,7 @@ export function FlowHeatmap({ data, width: propWidth, height = 400 }: FlowHeatma
 
     // Color scale - diverging for net flow
     const maxFlow = d3.max(flatData, d => Math.abs(d.value)) || 1;
-    const colorScale = d3.scaleDiverging()
+    const colorScale = d3.scaleDiverging<string>()
       .domain([-maxFlow, 0, maxFlow])
       .interpolator(d3.interpolateRdBu);
 
@@ -152,8 +160,9 @@ export function FlowHeatmap({ data, width: propWidth, height = 400 }: FlowHeatma
     // X-axis (time)
     const xAxis = d3.axisBottom(xScale)
       .ticks(10)
-      .tickFormat(d => {
-        const time = timeExtent[0] + d * timeStep;
+      .tickFormat((d) => {
+        const binIndex = Number(d);
+        const time = timeExtent[0] + binIndex * timeStep;
         return new Date(time).toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit'
@@ -174,8 +183,9 @@ export function FlowHeatmap({ data, width: propWidth, height = 400 }: FlowHeatma
     // Y-axis (price)
     const yAxis = d3.axisLeft(yScale)
       .ticks(10)
-      .tickFormat(d => {
-        const price = priceExtent[0] + d * priceStep;
+      .tickFormat((d) => {
+        const binIndex = Number(d);
+        const price = priceExtent[0] + binIndex * priceStep;
         return `$${price.toFixed(0)}`;
       });
 

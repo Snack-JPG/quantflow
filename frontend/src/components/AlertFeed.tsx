@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { AlertTriangle, Info, AlertCircle, TrendingUp, Shield, Eye } from 'lucide-react'
+import { useCallback, useEffect, useState, useRef } from 'react'
+import { AlertTriangle, Info, AlertCircle, TrendingUp, Shield, Eye, type LucideIcon } from 'lucide-react'
 
 interface Alert {
   id: string
@@ -11,13 +11,18 @@ interface Alert {
   confidence: number
   exchange: string
   symbol: string
-  context: Record<string, any>
+  context: Record<string, unknown>
   explanation: string
   ai_generated: boolean
 }
 
+interface AlertSocketMessage {
+  type: string
+  data?: Alert
+}
+
 // Map pattern names to icons
-const patternIcons: Record<string, any> = {
+const patternIcons: Record<string, LucideIcon> = {
   spoofing: Shield,
   layering: TrendingUp,
   walls: Eye,
@@ -61,26 +66,9 @@ export default function AlertFeed({ maxAlerts = 20 }: { maxAlerts?: number }) {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  useEffect(() => {
-    // Fetch initial alerts
-    fetchAlerts()
-
-    // Set up WebSocket connection
-    connectWebSocket()
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close()
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-      }
-    }
-  }, [])
-
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/alerts?limit=${maxAlerts}`)
       if (response.ok) {
@@ -90,9 +78,9 @@ export default function AlertFeed({ maxAlerts = 20 }: { maxAlerts?: number }) {
     } catch (error) {
       console.error('Error fetching alerts:', error)
     }
-  }
+  }, [maxAlerts])
 
-  const connectWebSocket = () => {
+  const connectWebSocket = useCallback(() => {
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws'
 
     try {
@@ -110,9 +98,9 @@ export default function AlertFeed({ maxAlerts = 20 }: { maxAlerts?: number }) {
 
       ws.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data)
-          if (message.type === 'alert') {
-            const newAlert = message.data as Alert
+          const message = JSON.parse(event.data) as AlertSocketMessage
+          if (message.type === 'alert' && message.data) {
+            const newAlert = message.data
             setAlerts(prev => {
               // Add new alert at the beginning, limit to maxAlerts
               const updated = [newAlert, ...prev].slice(0, maxAlerts)
@@ -144,7 +132,21 @@ export default function AlertFeed({ maxAlerts = 20 }: { maxAlerts?: number }) {
       console.error('Error creating WebSocket connection:', error)
       setIsConnected(false)
     }
-  }
+  }, [maxAlerts])
+
+  useEffect(() => {
+    fetchAlerts()
+    connectWebSocket()
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
+    }
+  }, [connectWebSocket, fetchAlerts])
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp)

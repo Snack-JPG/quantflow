@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { createChart, IChartApi, ColorType } from 'lightweight-charts';
+import { createChart, IChartApi, ColorType, UTCTimestamp } from 'lightweight-charts';
 import { motion } from 'framer-motion';
 import { TrendingUp } from 'lucide-react';
 
@@ -46,7 +46,7 @@ export function EquityCurve({ data, height = 400 }: EquityCurveProps) {
     });
 
     const chartData = data.map(d => ({
-      time: Math.floor(d.timestamp / 1000) as any,
+      time: Math.floor(d.timestamp / 1000) as UTCTimestamp,
       value: d.value,
     }));
 

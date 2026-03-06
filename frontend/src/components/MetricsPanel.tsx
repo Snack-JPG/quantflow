@@ -3,52 +3,10 @@
  */
 
 import React from 'react';
-
-interface MetricsData {
-  // VWAP
-  vwap_1m?: number | null;
-  vwap_5m?: number | null;
-  vwap_15m?: number | null;
-
-  // Order Book Imbalance
-  obi?: number;
-  weighted_obi?: number;
-  obi_signal?: string;
-
-  // Order Flow Imbalance
-  ofi?: number;
-  cumulative_ofi?: number;
-  ofi_signal?: string;
-
-  // Kyle's Lambda
-  kyles_lambda?: number;
-  price_impact?: number;
-  lambda_liquidity?: string;
-
-  // VPIN
-  vpin?: number;
-  vpin_toxicity?: string;
-
-  // Liquidity Metrics
-  amihud?: number;
-  amihud_liquidity?: string;
-  roll_spread?: number;
-  roll_regime?: string;
-
-  // Volatility
-  realized_vol?: Record<number, number>;
-  vol_term_structure?: string;
-  garman_klass_vol?: number;
-  parkinson_vol?: number;
-
-  // Hurst
-  hurst_exponent?: number;
-  hurst_regime?: string;
-  hurst_strategy?: string;
-}
+import { AnalyticsData } from '@/types/market';
 
 interface MetricsPanelProps {
-  metrics: MetricsData | null;
+  metrics: AnalyticsData | null;
 }
 
 export function MetricsPanel({ metrics }: MetricsPanelProps) {
@@ -160,7 +118,7 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
           <h3 className="text-sm font-semibold text-muted-foreground mb-2">Price Impact</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
-              <div className="text-xs text-muted-foreground">Kyle's λ</div>
+              <div className="text-xs text-muted-foreground">Kyle&apos;s λ</div>
               <div className="font-mono">{formatNumber(metrics.kyles_lambda, 6)}</div>
             </div>
             <div>

@@ -115,12 +115,12 @@ const generateMockRegimes = () => {
 export default function AnalysisLabPage() {
   const [metricData, setMetricData] = useState(() => generateMockMetricData());
   const [flowData, setFlowData] = useState(() => generateMockFlowData());
-  const [volumeData, setVolumeData] = useState(() => generateMockVolumeData());
+  const [volumeData] = useState(() => generateMockVolumeData());
   const [vpin, setVpin] = useState(0.45);
   const [historicalVpin, setHistoricalVpin] = useState(() =>
     Array.from({ length: 24 }, () => 0.3 + Math.random() * 0.4)
   );
-  const [regimes, setRegimes] = useState(() => generateMockRegimes());
+  const [regimes] = useState(() => generateMockRegimes());
   const [selectedExchange, setSelectedExchange] = useState('All Exchanges');
   const [autoRefresh, setAutoRefresh] = useState(true);
 

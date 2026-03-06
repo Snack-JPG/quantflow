@@ -48,13 +48,21 @@ export function StrategyConfig({ strategy, onChange }: StrategyConfigProps) {
     onChange({ ...strategy, signals: newSignals });
   };
 
-  const updateEntryRule = (index: number, field: 'condition' | 'threshold', value: any) => {
+  const updateEntryRule = (
+    index: number,
+    field: 'condition' | 'threshold',
+    value: string | number
+  ) => {
     const newRules = [...strategy.entryRules];
     newRules[index] = { ...newRules[index], [field]: value };
     onChange({ ...strategy, entryRules: newRules });
   };
 
-  const updateExitRule = (index: number, field: 'condition' | 'threshold', value: any) => {
+  const updateExitRule = (
+    index: number,
+    field: 'condition' | 'threshold',
+    value: string | number
+  ) => {
     const newRules = [...strategy.exitRules];
     newRules[index] = { ...newRules[index], [field]: value };
     onChange({ ...strategy, exitRules: newRules });

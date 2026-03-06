@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, TrendingUp, TrendingDown, Zap, Shield, AlertTriangle, Bell } from 'lucide-react';
+import { AlertCircle, TrendingUp, Zap, Shield, AlertTriangle, Bell } from 'lucide-react';
 
 interface Alert {
   id: string;

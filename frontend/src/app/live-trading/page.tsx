@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OrderBookHeatmap } from '@/components/LiveTrading/OrderBookHeatmap';
 import { MultiExchangeStrip } from '@/components/LiveTrading/MultiExchangeStrip';
 import { TradeTape } from '@/components/LiveTrading/TradeTape';
@@ -117,6 +117,16 @@ export default function LiveTradingPage() {
     order_flow_imbalance: -0.08
   });
 
+  const formattedSymbol = selectedSymbol.replace('/', '');
+  const orderBookSnapshot = {
+    exchange: 'simulated',
+    symbol: formattedSymbol,
+    timestamp: Date.now() * 1000,
+    sequence: Date.now(),
+    bids: orderBookData.bids.map((b) => [`${b.price}`, `${b.quantity}`]),
+    asks: orderBookData.asks.map((a) => [`${a.price}`, `${a.quantity}`]),
+  };
+
   // Simulate real-time updates
   useEffect(() => {
     const interval = setInterval(() => {
@@ -190,11 +200,7 @@ export default function LiveTradingPage() {
           className="col-span-3"
         >
           <OrderBook
-            data={{
-              bids: orderBookData.bids.map(b => [`${b.price}`, `${b.quantity}`]),
-              asks: orderBookData.asks.map(a => [`${a.price}`, `${a.quantity}`]),
-              lastUpdateId: Date.now()
-            }}
+            data={orderBookSnapshot}
             depth={20}
           />
         </motion.div>
@@ -219,11 +225,7 @@ export default function LiveTradingPage() {
           <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4">
             <h3 className="text-sm font-semibold text-zinc-400 mb-3">Market Depth</h3>
             <DepthChart
-              data={{
-                bids: orderBookData.bids.map(b => [`${b.price}`, `${b.quantity}`]),
-                asks: orderBookData.asks.map(a => [`${a.price}`, `${a.quantity}`]),
-                lastUpdateId: Date.now()
-              }}
+              data={orderBookSnapshot}
               height={300}
             />
           </div>

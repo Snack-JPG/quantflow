@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 
 interface VolumeLevel {
   price: number;
@@ -70,9 +70,9 @@ export function VolumeProfile({
     const totalVolume = data.reduce((sum, d) => sum + d.totalVolume, 0);
     const targetVolume = totalVolume * 0.7;
 
-    let valueAreaData = [poc];
+    const valueAreaData = [poc];
     let accumulatedVolume = poc.totalVolume;
-    let pocIndex = data.findIndex(d => d.price === poc.price);
+    const pocIndex = data.findIndex(d => d.price === poc.price);
     let upperIndex = pocIndex + 1;
     let lowerIndex = pocIndex - 1;
 
