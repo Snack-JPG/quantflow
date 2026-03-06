@@ -2,7 +2,7 @@
 
 **Real-time market microstructure analysis, AI-powered pattern detection, and institutional-grade backtesting**
 
-[![CI/CD Pipeline](https://github.com/yourusername/quantflow/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/quantflow/actions)
+[![CI/CD Pipeline](https://github.com/Snack-JPG/quantflow/actions/workflows/ci.yml/badge.svg)](https://github.com/Snack-JPG/quantflow/actions)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://python.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://typescriptlang.org)
 [![Docker](https://img.shields.io/badge/Docker-ready-green.svg)](https://docker.com)
@@ -121,7 +121,7 @@ Built from scratch (no external libraries) to demonstrate architecture understan
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/quantflow.git
+git clone https://github.com/Snack-JPG/quantflow.git
 cd quantflow
 
 # Start all services
